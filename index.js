@@ -1,15 +1,28 @@
-function isPrime(number) {
-  if (number <= 1 || !Number.isInteger(number)) {
-    return false;
-  }
+const express = require("express");
 
-  for (let divisor = 2; divisor <= Math.sqrt(number); divisor++) {
-    if (number % divisor === 0) {
-      return false;
-    }
-  }
+const app = express();
+const port = 3000;
 
-  return true;
-}
+app.get("/", (req, res) => {
+  res.send("Welcome to Camper Bot's homepage!");
+});
 
-module.exports = { isPrime };
+app.get("/hobbies", (req, res) => {
+  res.send("I cycle, go boating, and play guitar.");
+});
+
+app.get("/skills", (req, res) => {
+  res.send("JavaScript, Node.js, and Express.js!");
+});
+
+app.get("/api/profile", (req, res) => {
+  res.json({
+    name: "Camper Bot",
+    hobbies: ["cycling", "boating", "guitar"],
+    skills: ["JavaScript", "Node.js", "Express.js"],
+  });
+});
+
+app.listen(port, () => {
+  console.log(`Server listening on port ${port}`);
+});

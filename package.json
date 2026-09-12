@@ -1,9 +1,12 @@
 {
-  "name": "prime-checker",
+  "name": "personal-profile-app",
   "version": "1.0.0",
-  "description": "A module for checking whether numbers are prime.",
-  "keywords": [],
-  "license": "MIT",
-  "author": "",
-  "type": "commonjs"
+  "description": "Personal profile app",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^5.2.1"
+  }
 }

@@ -1,43 +1,66 @@
-import express from "express";
-import cors from "cors";
+import http from 'http';
+import fs from 'fs';
+import { WebSocket, WebSocketServer } from 'ws';
 
-const app = express();
+const PORT = 3001;
 
-app.use(cors({ optionsSuccessStatus: 200 }));
+const server = http.createServer((req, res) => {
+	const files = {
+		'/': { path: './public/index.html', contentType: 'text/html' },
+		'/script.js': {
+			path: './public/script.js',
+			contentType: 'text/javascript',
+		},
+	};
+	const file = files[req.url];
 
-app.use(express.static("public"));
+	if (!file) {
+		res.writeHead(404, { 'Content-Type': 'text/plain' });
+		res.end('Not found');
+		return;
+	}
 
-app.get("/", (_req, res) => {
-  res.sendFile(import.meta.dirname + "/views/index.html");
+	fs.readFile(file.path, (err, data) => {
+		if (err) {
+			res.writeHead(500);
+			res.end('Error loading page');
+			return;
+		}
+
+		res.writeHead(200, { 'Content-Type': file.contentType });
+		res.end(data);
+	});
 });
 
-// Do not change code above this line
+const wss = new WebSocketServer({ server });
 
-// Do not change code below this line
+function broadcast(payload) {
+	const message = JSON.stringify(payload);
 
-const handleDate = (req, res) => {
-  const { date } = req.params;
+	wss.clients.forEach((client) => {
+		if (client.readyState === WebSocket.OPEN) {
+			client.send(message);
+		}
+	});
+}
 
-  let parsedDate;
-  if (!date) {
-    parsedDate = new Date();
-  } else if (/^\d+$/.test(date)) {
-    parsedDate = new Date(Number(date));
-  } else {
-    parsedDate = new Date(date);
-  }
+wss.on('connection', (socket, req) => {
+	const username = new URL(req.url, 'http://localhost').searchParams.get(
+		'username',
+	);
 
-  if (isNaN(parsedDate.getTime())) {
-    return res.json({ error: "Invalid Date" });
-  }
+	broadcast({ type: 'system', text: `${username} joined` });
 
-  res.json({ unix: parsedDate.getTime(), utc: parsedDate.toUTCString() });
-};
+	socket.on('message', (data) => {
+		const { username, text } = JSON.parse(data.toString());
+		broadcast({ type: 'chat', username, text });
+	});
 
-app.get("/api", handleDate);
-app.get("/api/:date", handleDate);
+	socket.on('close', () => {
+		broadcast({ type: 'system', text: `${username} left` });
+	});
+});
 
-const PORT = 8000;
-const listener = app.listen(PORT, function () {
-  console.log("Your app is listening on port " + listener.address().port);
+server.listen(PORT, () => {
+	console.log(`Chat server running at http://localhost:${PORT}`);
 });
